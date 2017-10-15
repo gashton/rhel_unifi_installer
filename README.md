@@ -9,7 +9,7 @@ Note: Due to the unavailabiliy of RPM packages from Ubiquiti, this solution prov
 
 2. `git clone https://github.com/gashton/rhel_unifi_installer.git`
 
-3. `/tmp/rhel_unifi_installer/InstallUnifi.sh -f install -v 5.5.20 -d /opt/`
+3. `bash /tmp/rhel_unifi_installer/InstallUnifi.sh -f install -v 5.5.20 -d /opt/`
 
 # Usage
 
