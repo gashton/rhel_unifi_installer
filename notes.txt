@@ -1,0 +1,6 @@
+Add the following lines to data/system.properties for enhanced logging.
+
+#log.guest=debug
+#log.inform=debug
+#log.inform.ap=debug
+#log.inform.sta=debug

@@ -8,20 +8,6 @@
 # Created: 2017-07-22
 #
 
-DIR="$(dirname $0)"
-EXTRAS_DIR="${DIR}/extras"
-TMP_BUILD_PATH="/tmp/unifi-build-$(date +%y%m%d-%H%M%S)"
-PACKAGE_NAME="UniFi.unix.zip"
-URL="https://dl.ubnt.com/unifi"
-RUN_USER="unifi"
-INSTALL_DIRECTORY_NAME="unifi"
-
-MINIMUM_MONGOD_VERSION="2.4.14"
-MINIMUM_JAVA_VERSION="1.8"
-
-MONGOD_BIN=$(type -p mongod)
-JAVA_BIN=$(type -p java)
-
 function usage {
 	echo -e "\e[31mUniFi CentOS/RedHat installer/upgrader\e[39m"
 	echo -e "\e[31musage:\e[39m $0 \e[97m-f\e[39m install \e[97m-v\e[39m <VERSION> \e[97m-d\e[39m <INSTALL_PATH> {\e[97m-y\e[39m} {\e[97m-s\e[39m} | \e[97m-f\e[39m remove"
@@ -58,6 +44,20 @@ function install {
 	DATA_PATH="${INSTALL_PATH}/data"
 
 	NAME="UniFi v${VERSION} Install"
+	
+	#Try and stop Unifi if it is already installed.
+	if [[ -f "/etc/systemd/system/unifi.service" || -f "/etc/init.d/unifi" ]]; then
+		service unifi stop >/dev/null
+		systemctl stop unifi >/dev/null
+	fi
+	
+	local ACE_JAR_PID=$(pgrep -f ace.jar)
+	if [[ -n ${ACE_JAR_PID} ]]; then
+		if [[ $(ls -la /proc/${ACE_JAR_PID}/cwd | grep ${INSTALL_PATH}) ]]; then
+			logError "ERROR: Unifi is running, please stop process. (Detected PID: ${ACE_JAR_PID})"
+			exit 1
+		fi
+	fi
 
 	logInfo "Checking dependencies installed..."
 
@@ -89,12 +89,6 @@ function install {
 	#Check if install location already exists, if so backup config.
 	if [[ -d "${DATA_PATH}" ]]; then
 		logInfo "Destination contains an existing installation"
-		
-		if [[ -f /etc/init.d/unifi ]]; then
-			logInfo "Attempting to stop existing UniFi service..."
-			/etc/init.d/unifi stop
-		fi
-
 		logInfo "Backing up existing installation data"	
 		BACKUP_FILE="${DESTINATION}/unifi.data.$(date +%y%m%d-%H%M%S).backup"
 		tar -C "${DATA_PATH}" -czvf "${BACKUP_FILE}" .
@@ -202,6 +196,20 @@ function remove {
 }
 
 NAME="UniFi Installer"
+
+DIR="$(dirname $0)"
+EXTRAS_DIR="${DIR}/extras"
+TMP_BUILD_PATH="/tmp/unifi-build-$(date +%y%m%d-%H%M%S)"
+PACKAGE_NAME="UniFi.unix.zip"
+URL="https://dl.ubnt.com/unifi"
+RUN_USER="unifi"
+INSTALL_DIRECTORY_NAME="unifi"
+
+MINIMUM_MONGOD_VERSION="2.4.14"
+MINIMUM_JAVA_VERSION="1.8"
+
+MONGOD_BIN=$(type -p mongod)
+JAVA_BIN=$(type -p java)
 
 #Check for required binaries
 if [[ -z "$(type unzip)" || -z "$(type wget)" ]]; then
