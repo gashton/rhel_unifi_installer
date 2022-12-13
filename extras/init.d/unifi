@@ -1,0 +1,80 @@
+#!/bin/sh
+#
+# description: Starts and stops Ubiquiti Networks Unifi Controller
+#
+
+
+# Source function library.
+if [ -f /etc/init.d/functions ] ; then
+  . /etc/init.d/functions
+elif [ -f /etc/rc.d/init.d/functions ] ; then
+  . /etc/rc.d/init.d/functions
+else
+  exit 0
+fi
+
+RETVAL=0
+NAME="unifi"
+BASE_DIR=""
+RUNDIR="${BASE_DIR}/run"
+PIDFILE="${RUNDIR}/${NAME}"
+RUNUSER=unifi
+
+ls "${BASE_DIR}/lib/ace.jar" >/dev/null 2>/dev/null || {
+        echo "Unifi is not properly installed"
+        exit 1
+ }
+
+function check_already_running {
+	if [[ $(pgrep -f "${BASE_DIR}/lib/ace.jar") ]]; then
+		return 0
+	else
+		return 1
+	fi
+}
+
+start() {
+	check_already_running && { echo "Already running"; return 1; }
+	echo $"Starting ${NAME}: "
+	runuser ${RUNUSER} -c "cd ${BASE_DIR} && java -jar "${BASE_DIR}/lib/ace.jar" start &"
+	return 0
+}	
+
+stop() {
+	check_already_running || { echo "Not running"; return 1; }
+	echo -n "Stopping ${NAME}: "
+	for i in `seq 1 15` ; do
+		check_already_running || { echo "Stopped"; return 0; }
+		[ $i -eq 1 ] && echo "Stop file created" && [ -d ${RUNDIR} ] && touch ${RUNDIR}/server.stop
+		[ $i -eq 9 ] && echo "SIGTERM sent" && pkill -15 -f "${BASE_DIR}/lib/ace.jar"
+		[ $i -eq 14 ] && echo "SIGKILL sent" && pkill -9 -f "${BASE_DIR}/lib/ace.jar"
+		sleep 1
+	done
+	return 0
+}	
+
+restart() {
+	stop
+	start
+}	
+
+
+case "$1" in
+  start)
+  	start
+	;;
+  status)
+	status
+	;;
+  stop)
+  	stop
+	;;
+  restart)
+  	restart
+	;;
+  *)
+	echo $"Usage: $0 {start|stop|restart}"
+	exit 1
+esac
+
+exit $?
