@@ -1,0 +1,13 @@
+[Unit]
+Description=Ubiquiti Networks UniFi
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/java -jar lib/ace.jar start
+Type=simple
+WorkingDirectory=#WORKING_DIR#
+Restart=on-failure
+User=unifi
+
+[Install]
+WantedBy=multi-user.target
